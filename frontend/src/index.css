@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #0f172a;
+}
+
+/* Subtle scrollbar for the data table */
+.tbl-scroll::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+.tbl-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+.tbl-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}

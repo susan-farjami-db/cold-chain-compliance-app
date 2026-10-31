@@ -1,0 +1,27 @@
+resources:
+  apps:
+    cold_chain_apx:
+      name: cold-chain-apx-${bundle.target}
+      description: Cold Chain T-Val compliance app v2 (FastAPI + React)
+      source_code_path: ../src/apx_app
+      config:
+        command:
+          - python
+          - app.py
+        env:
+          - name: DATABRICKS_WAREHOUSE_ID
+            value_from: sql-warehouse
+          - name: COLD_CHAIN_CATALOG
+            value: ${var.catalog}
+          - name: COLD_CHAIN_SCHEMA
+            value: ${var.schema}
+          - name: TRAILER_TABLE
+            value: ${var.trailer_table}
+          - name: TRAILER_ID_COL
+            value: ${var.trailer_id_col}
+      resources:
+        - name: sql-warehouse
+          description: Warehouse used to read/write the compliance Delta tables
+          sql_warehouse:
+            id: ${var.warehouse_id}
+            permission: CAN_USE

@@ -1,6 +1,13 @@
 # Cold Chain — T-Val Compliance App
 
-A Databricks App (Dash + AG Grid), packaged as a Databricks Asset Bundle, for tracking fleet temperature-validation (T-Val) compliance. Operations staff enter and update compliance records in a spreadsheet-style grid, and every save is written to a governed Delta table in Unity Catalog. It replaces a shared tracking spreadsheet.
+A Databricks App, packaged as a Databricks Asset Bundle, for tracking fleet temperature-validation (T-Val) compliance. Operations staff enter and update compliance records in a spreadsheet-style grid, and every save is written to a governed Delta table in Unity Catalog. It replaces a shared tracking spreadsheet.
+
+The bundle includes two versions of the app. Both use the same tables and the same save logic, and you can deploy either one or both:
+
+| App | Resource key | Stack | Source |
+|---|---|---|---|
+| v1 | `cold_chain` | Dash + AG Grid (pure Python) | `src/app/` |
+| v2 (APX) | `cold_chain_apx` | FastAPI + React/TypeScript/Vite/Tailwind | `src/apx_app/` (backend + built SPA), `frontend/` (React source) |
 
 ## What it does
 
@@ -17,12 +24,13 @@ The data lives in Unity Catalog, ready to join with shipment data or use in dash
 
 ```
 databricks.yml                     # bundle, variables, dev/prod targets
-resources/cold_chain.app.yml       # Databricks App + SQL warehouse resource + env config
+resources/cold_chain.app.yml       # v1 Dash app + SQL warehouse resource + env config
+resources/cold_chain_apx.app.yml   # v2 FastAPI + React app (same config)
 resources/setup_tables.job.yml     # one-off job that creates and seeds the tables
 setup/create_tables.sql            # DDL + synthetic sample data (idempotent)
-src/app/app.py                     # Dash UI
-src/app/backend.py                 # Delta read/write through the SQL warehouse
-src/app/requirements.txt
+src/app/                           # v1: Dash UI (app.py) + Delta data layer (backend.py)
+src/apx_app/                       # v2: FastAPI API (app.py) + same data layer + compiled SPA in static/
+frontend/                          # v2: React source; `npm run build` writes to src/apx_app/static
 ```
 
 ## Prerequisites
@@ -45,18 +53,33 @@ databricks bundle deploy   $VARS --profile <profile>
 # 1. Create the schema + tables and seed sample data (safe to re-run)
 databricks bundle run setup_tables $VARS --profile <profile>
 
-# 2. Start the app
-databricks bundle run cold_chain $VARS --profile <profile>
+# 2. Start the app(s)
+databricks bundle run cold_chain     $VARS --profile <profile>   # v1 (Dash)
+databricks bundle run cold_chain_apx $VARS --profile <profile>   # v2 (FastAPI + React)
 ```
 
-Then give the app's service principal access to the data. Find its ID with `databricks apps get cold-chain-dev` (field `service_principal_client_id`):
+`bundle deploy` creates both apps. To deploy only one, delete the other's file from `resources/`.
+
+Then give each app's service principal access to the data. Find the ID with `databricks apps get cold-chain-dev` (or `cold-chain-apx-dev`), field `service_principal_client_id`:
 
 ```sql
 GRANT USE CATALOG ON CATALOG <catalog> TO `<service-principal-id>`;
 GRANT USE SCHEMA, SELECT, MODIFY ON SCHEMA <catalog>.cold_chain TO `<service-principal-id>`;
 ```
 
-To deploy the shared production copy, add `-t prod`. The app is then named `cold-chain-prod`.
+To deploy the shared production copy, add `-t prod`. The apps are then named `cold-chain-prod` and `cold-chain-apx-prod`.
+
+## Rebuilding the v2 frontend
+
+The compiled SPA in `src/apx_app/static/` is committed, so deploying doesn't need Node. Rebuild only if you change `frontend/src`:
+
+```bash
+cd frontend
+npm install
+npm run build        # writes to ../src/apx_app/static
+```
+
+For local development, run the API with `python src/apx_app/app.py` (port 8080, with the same env vars as in `resources/cold_chain_apx.app.yml`) and `npm run dev` in `frontend/`. Vite proxies `/api` to the API.
 
 ## Configuration
 
