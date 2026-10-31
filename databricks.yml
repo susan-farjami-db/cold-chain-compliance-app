@@ -1,0 +1,30 @@
+bundle:
+  name: cold-chain-compliance
+
+include:
+  - resources/*.yml
+
+variables:
+  warehouse_id:
+    description: ID of the SQL warehouse the app and setup job use to read/write the Delta tables.
+  catalog:
+    description: Unity Catalog catalog that holds the cold-chain tables.
+  schema:
+    description: Schema for the cold-chain tables (created by the setup job if missing).
+    default: cold_chain
+  trailer_table:
+    description: Optional fully qualified table feeding the Unit # dropdown. Leave blank to use <catalog>.<schema>.trailers.
+    default: ""
+  trailer_id_col:
+    description: ID column in trailer_table.
+    default: trailer_id
+
+targets:
+  dev:
+    mode: development
+    default: true
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
